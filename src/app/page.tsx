@@ -1,101 +1,154 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { tracks, categories, Category } from "@/data/tracks";
+import { useAudioPlayer } from "@/lib/useAudioPlayer";
+import { useSessionTimer } from "@/lib/useSessionTimer";
+import BackgroundParticles from "@/components/BackgroundParticles";
+import GradientOrbs from "@/components/GradientOrbs";
+import BreathingCircle from "@/components/BreathingCircle";
+import BrainState from "@/components/BrainState";
+import SessionTimer from "@/components/SessionTimer";
+import CategoryTabs from "@/components/CategoryTabs";
+import BottomBar from "@/components/BottomBar";
+import PremiumModal from "@/components/PremiumModal";
+import NoiseOverlay from "@/components/NoiseOverlay";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const router = useRouter();
+  const [activeCategory, setActiveCategory] = useState<Category>("focus");
+  const [showPremium, setShowPremium] = useState(false);
+  const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const filteredTracks = useMemo(
+    () => tracks.filter((t) => t.category === activeCategory),
+    [activeCategory]
+  );
+
+  const accentColor =
+    categories.find((c) => c.id === activeCategory)?.color ?? "#5b8af5";
+
+  const player = useAudioPlayer(filteredTracks);
+  const session = useSessionTimer();
+
+  const handleToggle = () => {
+    player.toggle();
+    if (!player.isPlaying && !session.isRunning) {
+      session.start();
+    } else if (player.isPlaying && session.isRunning) {
+      session.stop();
+    }
+  };
+
+  const handleCategoryChange = (c: Category) => {
+    setActiveCategory(c);
+    player.selectTrack(0);
+  };
+
+  const toggleLike = useCallback((trackId: string) => {
+    setLikedTracks((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackId)) {
+        next.delete(trackId);
+      } else {
+        next.add(trackId);
+      }
+      return next;
+    });
+  }, []);
+
+  const currentTrackLiked = player.currentTrack
+    ? likedTracks.has(player.currentTrack.id)
+    : false;
+
+  return (
+    <main className="relative h-screen w-screen overflow-hidden flex flex-col items-center justify-center select-none">
+      <NoiseOverlay />
+      <BackgroundParticles />
+      <GradientOrbs category={activeCategory} />
+
+      {/* Top bar */}
+      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-5">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-2 h-2 rounded-full transition-colors duration-[800ms] ease-in-out animate-logo-pulse"
+            style={{ background: accentColor, boxShadow: `0 0 8px ${accentColor}80` }}
+          />
+          <span className="text-xs text-subtle tracking-widest uppercase">
+            Maro Focus
+          </span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/login")}
+            className="text-[13px] transition-colors"
+            style={{ color: "rgba(255,255,255,0.5)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+          >
+            Sign in
+          </button>
+          <button
+            onClick={() => setShowPremium(true)}
+            className="px-3.5 py-1.5 rounded-full text-[11px] font-medium text-white/90 tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, #5b8af5, #8b5cf6)",
+              boxShadow: "0 0 20px rgba(91, 138, 245, 0.2), 0 0 40px rgba(139, 92, 246, 0.1)",
+            }}
+          >
+            Pro
+          </button>
+        </div>
+      </header>
+
+      {/* Center content */}
+      <div className="relative z-10 flex flex-col items-center gap-6 sm:gap-8 md:gap-10">
+        <BrainState
+          isPlaying={player.isPlaying}
+          trackTitle={player.currentTrack?.title ?? "Select a track"}
+          trackDescription={player.currentTrack?.description ?? "Tap the circle to begin"}
+          accentColor={accentColor}
+        />
+
+        <BreathingCircle
+          isPlaying={player.isPlaying}
+          onToggle={handleToggle}
+          accentColor={accentColor}
+        />
+
+        <SessionTimer
+          sessionDuration={session.sessionDuration}
+          remaining={session.remaining}
+          isEndless={session.isEndless}
+          elapsed={session.elapsed}
+          isRunning={session.isRunning}
+          onSelectDuration={session.selectDuration}
+          accentColor={accentColor}
+        />
+
+        <CategoryTabs
+          activeCategory={activeCategory}
+          onSelect={handleCategoryChange}
+        />
+      </div>
+
+      <BottomBar
+        track={player.currentTrack}
+        isPlaying={player.isPlaying}
+        currentTime={player.currentTime}
+        duration={player.duration}
+        volume={player.volume}
+        onToggle={handleToggle}
+        onPrev={player.prev}
+        onNext={player.next}
+        onSeek={player.seek}
+        onVolumeChange={player.setVolume}
+        isLiked={currentTrackLiked}
+        onToggleLike={() => player.currentTrack && toggleLike(player.currentTrack.id)}
+      />
+
+      <PremiumModal isOpen={showPremium} onClose={() => setShowPremium(false)} accentColor={accentColor} />
+    </main>
   );
 }

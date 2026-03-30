@@ -3,25 +3,141 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --orbit-radius: 90px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+html,
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  overflow: hidden;
+  background: #0c0e14;
+  color: #e2e8f0;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Default range input — hidden on mobile via component class */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-track {
+  height: 3px;
+  border-radius: 2px;
+  background: #1a1d28;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #a29bfe;
+  margin-top: -3.5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: #1a1d28;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #a29bfe;
+  border: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+  opacity: 1;
+}
+
+/* Volume slider — uses category accent color via CSS variable */
+.volume-slider::-webkit-slider-track {
+  background: var(--track-color, #1a1d28);
+  opacity: 0.3;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  background: var(--track-color, #a29bfe);
+}
+
+.volume-slider::-moz-range-track {
+  background: var(--track-color, #1a1d28);
+  opacity: 0.3;
+}
+
+.volume-slider::-moz-range-thumb {
+  background: var(--track-color, #a29bfe);
+}
+
+/* Orbit animation — defined here so Tailwind won't purge it */
+@keyframes orbit {
+  0% {
+    transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg);
   }
+  100% {
+    transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg);
+  }
+}
+
+/* Modal breathing circle — also defined here as safety against purge */
+@keyframes breatheMini {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.animate-breathe-mini {
+  animation: breatheMini 3s ease-in-out infinite;
+}
+
+button.rounded-full::before,
+button.rounded-full::after {
+  display: none !important;
+  content: none !important;
+}
+
+button:focus-visible {
+  outline: none;
+}
+
+.gradient-orb {
+  filter: blur(120px);
+  pointer-events: none;
+  transition: background 0.8s ease;
+}
+
+.particle {
+  pointer-events: none;
 }
