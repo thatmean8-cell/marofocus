@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -23,11 +23,37 @@ export default function PremiumModal({
   accentColor = "#5b8af5",
 }: PremiumModalProps) {
   const [plan, setPlan] = useState<"yearly" | "monthly">("yearly");
+  const [loading, setLoading] = useState(false);
 
   // Reset to yearly every time modal opens
   useEffect(() => {
-    if (isOpen) setPlan("yearly");
+    if (isOpen) {
+      setPlan("yearly");
+      setLoading(false);
+    }
   }, [isOpen]);
+
+  const handleCheckout = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        console.error("No checkout URL returned:", data);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setLoading(false);
+    }
+  }, [plan, loading]);
 
   if (!isOpen) return null;
 
@@ -153,16 +179,20 @@ export default function PremiumModal({
 
           {/* CTA */}
           <button
-            className="w-full py-4 text-[15px] font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-px"
+            onClick={handleCheckout}
+            disabled={loading}
+            className="w-full py-4 text-[15px] font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
               borderRadius: 14,
               border: "none",
               background: "linear-gradient(135deg, #4a7af5, #6c5ce7)",
             }}
           >
-            {plan === "yearly"
-              ? "Start 7-Day Free Trial — $39.99/yr"
-              : "Start 7-Day Free Trial — $4.99/mo"}
+            {loading
+              ? "Redirecting..."
+              : plan === "yearly"
+                ? "Start 7-Day Free Trial — $39.99/yr"
+                : "Start 7-Day Free Trial — $4.99/mo"}
           </button>
           <p className="text-center mt-3 text-[12px]" style={{ color: "rgba(255,255,255,0.2)" }}>
             Cancel anytime. No commitment.
