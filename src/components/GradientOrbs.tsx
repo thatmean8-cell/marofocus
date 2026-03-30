@@ -8,6 +8,7 @@ const ORB_COLORS: Record<Category, [string, string, string]> = {
   sleep: ["#8b5cf6", "#7c4fe0", "#6a3fcf"],
   study: ["#34d399", "#2cb885", "#1f9e72"],
   meditate: ["#e8a87c", "#d4956a", "#c0825a"],
+  favorites: ["#f43f5e", "#e11d48", "#be123c"],
 };
 
 interface GradientOrbsProps {

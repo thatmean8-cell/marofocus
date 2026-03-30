@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { tracks, categories, Category } from "@/data/tracks";
 import { useAudioPlayer } from "@/lib/useAudioPlayer";
@@ -14,25 +14,66 @@ import CategoryTabs from "@/components/CategoryTabs";
 import BottomBar from "@/components/BottomBar";
 import PremiumModal from "@/components/PremiumModal";
 import NoiseOverlay from "@/components/NoiseOverlay";
+import FavoritesEmpty from "@/components/FavoritesEmpty";
+
+// localStorage helper for liked tracks
+function loadLikedTracks(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const saved = localStorage.getItem("maro-liked-tracks");
+    if (saved) return new Set(JSON.parse(saved));
+  } catch {}
+  return new Set();
+}
+
+function saveLikedTracks(liked: Set<string>) {
+  try {
+    localStorage.setItem("maro-liked-tracks", JSON.stringify(Array.from(liked)));
+  } catch {}
+}
 
 export default function Home() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<Category>("focus");
   const [showPremium, setShowPremium] = useState(false);
   const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
 
-  const filteredTracks = useMemo(
-    () => tracks.filter((t) => t.category === activeCategory),
-    [activeCategory]
-  );
+  // Load liked tracks from localStorage on mount
+  useEffect(() => {
+    setLikedTracks(loadLikedTracks());
+    setHydrated(true);
+  }, []);
 
-  const accentColor =
-    categories.find((c) => c.id === activeCategory)?.color ?? "#5b8af5";
+  // Save to localStorage whenever likedTracks changes (after hydration)
+  useEffect(() => {
+    if (hydrated) {
+      saveLikedTracks(likedTracks);
+    }
+  }, [likedTracks, hydrated]);
+
+  const filteredTracks = useMemo(() => {
+    if (activeCategory === "favorites") {
+      return tracks.filter((t) => likedTracks.has(t.id));
+    }
+    return tracks.filter((t) => t.category === activeCategory);
+  }, [activeCategory, likedTracks]);
+
+  // For favorites tab, use the color of the first liked track's category, or default rose
+  const accentColor = useMemo(() => {
+    if (activeCategory === "favorites") {
+      return "#f43f5e";
+    }
+    return categories.find((c) => c.id === activeCategory)?.color ?? "#5b8af5";
+  }, [activeCategory]);
 
   const player = useAudioPlayer(filteredTracks);
   const session = useSessionTimer();
 
+  const isFavoritesEmpty = activeCategory === "favorites" && filteredTracks.length === 0;
+
   const handleToggle = () => {
+    if (isFavoritesEmpty) return;
     player.toggle();
     if (!player.isPlaying && !session.isRunning) {
       session.start();
@@ -106,16 +147,20 @@ export default function Home() {
       <div className="relative z-10 flex flex-col items-center gap-6 sm:gap-8 md:gap-10">
         <BrainState
           isPlaying={player.isPlaying}
-          trackTitle={player.currentTrack?.title ?? "Select a track"}
-          trackDescription={player.currentTrack?.description ?? "Tap the circle to begin"}
+          trackTitle={isFavoritesEmpty ? "No favorites yet" : (player.currentTrack?.title ?? "Select a track")}
+          trackDescription={isFavoritesEmpty ? "Like tracks with the heart button" : (player.currentTrack?.description ?? "Tap the circle to begin")}
           accentColor={accentColor}
         />
 
-        <BreathingCircle
-          isPlaying={player.isPlaying}
-          onToggle={handleToggle}
-          accentColor={accentColor}
-        />
+        {isFavoritesEmpty ? (
+          <FavoritesEmpty />
+        ) : (
+          <BreathingCircle
+            isPlaying={player.isPlaying}
+            onToggle={handleToggle}
+            accentColor={accentColor}
+          />
+        )}
 
         <SessionTimer
           sessionDuration={session.sessionDuration}
@@ -130,6 +175,7 @@ export default function Home() {
         <CategoryTabs
           activeCategory={activeCategory}
           onSelect={handleCategoryChange}
+          favoritesCount={likedTracks.size}
         />
       </div>
 

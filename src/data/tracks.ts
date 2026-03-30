@@ -1,4 +1,4 @@
-export type Category = "focus" | "sleep" | "study" | "meditate";
+export type Category = "focus" | "sleep" | "study" | "meditate" | "favorites";
 
 export interface Track {
   id: string;
@@ -45,9 +45,10 @@ export const sessionDurations = [
   { label: "Endless", value: 0 },
 ] as const;
 
-export const categories: { id: Category; label: string; color: string }[] = [
+export const categories: { id: Category; label: string; color: string; icon?: string }[] = [
   { id: "focus", label: "Focus", color: "#5b8af5" },
   { id: "sleep", label: "Sleep", color: "#8b5cf6" },
   { id: "study", label: "Study", color: "#34d399" },
   { id: "meditate", label: "Meditate", color: "#e8a87c" },
+  { id: "favorites", label: "Favorites", color: "#f43f5e", icon: "heart" },
 ];
